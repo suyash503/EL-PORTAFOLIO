@@ -208,114 +208,63 @@
       }
     }
     ctx.globalAlpha = 1;
+    drawConstellation(s);
   }
 
-  /* ---------- the raven: follows the pointer across the hero, drops a feather on click ---------- */
-  var ravenEl = $('.raven-cursor'), featherCv = $('.feathers');
-  var wingNear = ravenEl && $('.wing-near', ravenEl), wingFar = ravenEl && $('.wing-far', ravenEl);
-  var useRaven = !!(finePointer && !reduced && ravenEl && featherCv && hero);
-  var RAVEN_W = 120, RAVEN_H = 60;           // matches .raven-cursor; the beak tip sits at 96.7% / 60.8%
-  var bird = { px: 0, py: 0, x: 0, y: 0, ang: 0, flap: 0, live: false, inHero: false };
-  var feathers = [], fctx = null;
-  function sizeFeathers() {
-    if (!featherCv) return;
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    featherCv.width = window.innerWidth * dpr; featherCv.height = window.innerHeight * dpr;
-    fctx = featherCv.getContext('2d'); fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  if (useRaven) {
-    sizeFeathers();
+  /* ---------- hero cursor: a gold ring trails the pointer and the nearest stars reach for it ---------- */
+  var ring = $('.c-ring'), dot = $('.c-dot');
+  var useCursor = !!(finePointer && !reduced && ring && dot && hero);
+  var cur = { px: 0, py: 0, x: 0, y: 0, live: false, inHero: false, glow: 0, over: false };
+  if (useCursor) {
     hero.addEventListener('pointermove', function (e) {
       if (e.pointerType && e.pointerType !== 'mouse') return;
-      bird.px = e.clientX; bird.py = e.clientY;
-      if (!bird.live) { bird.live = true; bird.x = e.clientX; bird.y = e.clientY; }
-      if (!bird.inHero) { bird.inHero = true; hero.classList.add('raven-on'); }
+      cur.px = e.clientX; cur.py = e.clientY;
+      if (!cur.live) { cur.live = true; cur.x = e.clientX; cur.y = e.clientY; }
+      if (!cur.inHero) { cur.inHero = true; hero.classList.add('cursor-on'); }
+      var over = !!(e.target && e.target.closest && e.target.closest('a, button'));
+      if (over !== cur.over) { cur.over = over; ring.classList.toggle('over', over); dot.classList.toggle('over', over); }
     });
-    hero.addEventListener('pointerleave', function () { bird.inHero = false; bird.live = false; hero.classList.remove('raven-on'); });
+    hero.addEventListener('pointerleave', function () { cur.inHero = false; cur.live = false; hero.classList.remove('cursor-on'); });
     hero.addEventListener('pointerdown', function (e) {
       if (e.pointerType && e.pointerType !== 'mouse') return;
-      var t = e.target, onControl = !!(t && t.closest && t.closest('a, button'));
-      // the feather leaves from the bird's body, a little behind the beak
-      var ox = bird.live ? bird.x - Math.cos(bird.ang) * 40 : e.clientX;
-      var oy = bird.live ? bird.y - Math.sin(bird.ang) * 40 : e.clientY;
-      for (var i = 0, n = onControl ? 3 : 1; i < n; i++) {
-        feathers.push({ x: ox + (Math.random() - 0.5) * 16, y: oy + 6, vx: (Math.random() - 0.5) * 60, vy: -24 - Math.random() * 36,
-          rot: Math.random() * 6.2832, vr: (Math.random() - 0.5) * 2.4, ph: Math.random() * 6.2832,
-          size: 18 + Math.random() * 10, life: 0, ttl: 2.4 + Math.random() * 1.2 });
-      }
-      if (feathers.length > 40) feathers.splice(0, feathers.length - 40);
+      ring.classList.remove('pulse');
+      void ring.offsetWidth;            // restart the pulse on every click
+      ring.classList.add('pulse');
     });
   }
-  function setWing(g, k) { if (g) g.setAttribute('transform', 'translate(0 32) scale(1 ' + k.toFixed(3) + ') translate(0 -32)'); }
-  function flyRaven(dt) {
-    if (!bird.inHero || !bird.live) { if (ravenEl.style.opacity !== '0') ravenEl.style.opacity = '0'; return; }
-    var follow = 1 - Math.pow(0.0016, dt);
-    var ddx = bird.px - bird.x, ddy = bird.py - bird.y, dist = Math.hypot(ddx, ddy);
-    bird.x += ddx * follow; bird.y += ddy * follow;
-    if (dist > 1.2) {
-      var want = Math.atan2(bird.py - bird.y, bird.px - bird.x), diff = want - bird.ang;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      bird.ang += diff * (1 - Math.pow(0.004, dt));
-    }
-    // beats hard while chasing, settles into a slow glide near the pointer
-    var chase = Math.min(1, dist / 60);
-    bird.flap += dt * (4 + chase * 10);
-    var base = 0.35 - 0.23 * chase, amp = 0.45 + 0.43 * chase;
-    setWing(wingNear, base + amp * Math.sin(bird.flap));
-    setWing(wingFar, (base + amp * Math.sin(bird.flap - 0.35)) * 0.85);
-    var deg = bird.ang * 180 / Math.PI, flip = Math.abs(deg) > 90 ? -1 : 1;
-    ravenEl.style.transformOrigin = '96.7% 60.8%';
-    ravenEl.style.opacity = '1';
-    ravenEl.style.transform = 'translate3d(' + (bird.x - RAVEN_W * 0.967).toFixed(2) + 'px,' + (bird.y - RAVEN_H * 0.608).toFixed(2) + 'px,0) rotate(' +
-      deg.toFixed(2) + 'deg) scaleY(' + flip + ')';
+  function moveCursor(dt) {
+    var on = cur.inHero && cur.live;
+    cur.glow += ((on ? 1 : 0) - cur.glow) * Math.min(1, dt * 6);
+    var op = on ? '1' : '0';
+    if (ring.style.opacity !== op) { ring.style.opacity = op; dot.style.opacity = op; }
+    if (!on) return;
+    var k = 1 - Math.pow(0.0004, dt);   // the ring lags a touch behind the dot
+    cur.x += (cur.px - cur.x) * k; cur.y += (cur.py - cur.y) * k;
+    ring.style.transform = 'translate3d(' + cur.x.toFixed(1) + 'px,' + cur.y.toFixed(1) + 'px,0)';
+    dot.style.transform = 'translate3d(' + cur.px + 'px,' + cur.py + 'px,0)';
   }
-  function drawFeather(ctx, p, a) {
-    var s = p.size, j;
-    ctx.save();
-    ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-    ctx.globalAlpha = a;
-    ctx.shadowColor = 'rgba(200,169,97,0.5)'; ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.5, 0);
-    ctx.bezierCurveTo(-s * 0.2, -s * 0.24, s * 0.3, -s * 0.2, s * 0.52, 0);
-    ctx.bezierCurveTo(s * 0.3, s * 0.16, -s * 0.2, s * 0.2, -s * 0.5, 0);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(200,169,97,0.32)'; ctx.fill();
-    ctx.strokeStyle = 'rgba(231,203,130,0.9)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.beginPath(); ctx.moveTo(-s * 0.66, 0); ctx.lineTo(s * 0.52, 0);
-    ctx.strokeStyle = '#E7CB82'; ctx.lineWidth = 1.2; ctx.stroke();
-    ctx.beginPath();
-    for (j = 1; j <= 4; j++) {
-      var x = -s * 0.36 + j * s * 0.15;
-      ctx.moveTo(x, 0); ctx.lineTo(x + s * 0.08, -s * 0.14);
-      ctx.moveTo(x, 0); ctx.lineTo(x + s * 0.08, s * 0.11);
+  // hairlines from the ring to the few stars nearest it, fading with distance
+  function drawConstellation(s) {
+    if (!useCursor || cur.glow < 0.01 || !cur.live) return;
+    var r = hero.getBoundingClientRect();
+    var cx = cur.x - r.left, cy = cur.y - r.top, R = 170, near = [], i;
+    for (i = 0; i < s.stars.length; i++) {
+      var dx = s.stars[i].x - cx, dy = s.stars[i].y - cy, d = dx * dx + dy * dy;
+      if (d < R * R) near.push([d, s.stars[i]]);
     }
-    ctx.strokeStyle = 'rgba(231,203,130,0.45)'; ctx.lineWidth = 0.8; ctx.stroke();
-    ctx.restore();
-  }
-  function drawFeathers(dt) {
-    if (!fctx) return;
-    var w = window.innerWidth, h = window.innerHeight;
-    fctx.clearRect(0, 0, w, h);
-    if (!feathers.length) return;
-    var next = [];
-    for (var i = 0; i < feathers.length; i++) {
-      var p = feathers[i];
-      p.life += dt;
-      var k = p.life / p.ttl;
-      if (k >= 1 || p.y > h + 40) continue;
-      p.vy += (38 - p.vy) * Math.min(1, dt * 1.5);       // eases into a slow fall
-      p.vx *= 1 - 0.8 * dt;
-      p.x += (p.vx + Math.sin(p.life * 2.2 + p.ph) * 34) * dt;
-      p.y += p.vy * dt;
-      p.rot += (p.vr + Math.cos(p.life * 2.2 + p.ph) * 0.9) * dt;   // rocks as it drifts
-      var a = k < 0.08 ? k / 0.08 : 1 - Math.pow((k - 0.08) / 0.92, 2);
-      drawFeather(fctx, p, a);
-      next.push(p);
+    near.sort(function (a, b) { return a[0] - b[0]; });
+    var ctx = s.ctx;
+    ctx.lineWidth = 0.8;
+    for (i = 0; i < near.length && i < 6; i++) {
+      var st = near[i][1], f = 1 - Math.sqrt(near[i][0]) / R;
+      ctx.globalAlpha = f * 0.6 * cur.glow;
+      ctx.strokeStyle = '#C8A961';
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(st.x, st.y); ctx.stroke();
+      ctx.globalAlpha = Math.min(1, 0.35 + f) * cur.glow;
+      ctx.fillStyle = '#E7CB82';
+      ctx.beginPath(); ctx.arc(st.x, st.y, Math.max(1.2, st.r * 1.3), 0, 6.2832); ctx.fill();
     }
-    feathers = next;
+    ctx.globalAlpha = 1;
   }
 
   /* ---------- one animation loop, idle when nothing is on screen ---------- */
@@ -323,8 +272,8 @@
   function frame(t) {
     var dt = Math.min(0.05, (t - (prevT || t)) / 1000);
     prevT = t;
+    if (useCursor) moveCursor(dt);
     if (heroVisible && !reduced) drawSky(t);
-    if (useRaven) { flyRaven(dt); drawFeathers(dt); }
     requestAnimationFrame(frame);
   }
   if (hero && 'IntersectionObserver' in window) {
@@ -341,7 +290,7 @@
   var resizeT;
   function onResize() {
     clearTimeout(resizeT);
-    resizeT = setTimeout(function () { sizeSky(); sizeFeathers(); drawTimelinePath(); onScroll(); }, 150);
+    resizeT = setTimeout(function () { sizeSky(); drawTimelinePath(); onScroll(); }, 150);
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onResize);

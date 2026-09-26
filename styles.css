@@ -183,14 +183,15 @@ button { font: inherit; color: inherit; }
 .mq-set i { font-style: normal; font-size: clamp(18px, 2.2vw, 30px); color: var(--gold); }
 @keyframes hs-mq { to { transform: translateX(-50%); } }
 
-/* the raven follows the pointer across the hero (fine pointers only) */
-.raven-cursor { position: fixed; left: 0; top: 0; z-index: 61; width: 120px; height: 60px; overflow: visible; pointer-events: none; opacity: 0; transition: opacity 0.35s; will-change: transform; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 10px rgba(200, 169, 97, 0.2)); }
-.raven-body { fill: #0A1219; stroke: var(--gold); stroke-width: 1.4; stroke-linejoin: round; }
-.wing-near path { fill: #0D1722; stroke: var(--gold); stroke-width: 1.2; stroke-linejoin: round; }
-.wing-far path { fill: #081018; stroke: rgba(200, 169, 97, 0.5); stroke-width: 1; stroke-linejoin: round; }
-.raven-eye { fill: #E7CB82; }
-.feathers { position: fixed; inset: 0; z-index: 60; width: 100%; height: 100%; pointer-events: none; }
-.house.raven-on, .house.raven-on a, .house.raven-on button { cursor: none; }
+/* hero cursor: a gold ring that trails the pointer, a dot on the exact point (fine pointers only) */
+.c-ring, .c-dot { position: fixed; left: 0; top: 0; z-index: 61; pointer-events: none; opacity: 0; border-radius: 50%; transition: opacity 0.3s; will-change: transform; }
+.c-ring { width: 36px; height: 36px; margin: -18px 0 0 -18px; border: 1px solid rgba(200, 169, 97, 0.85); transition: opacity 0.3s, width 0.35s var(--ease), height 0.35s var(--ease), margin 0.35s var(--ease), background 0.35s, border-color 0.35s; }
+.c-ring.over { width: 64px; height: 64px; margin: -32px 0 0 -32px; background: rgba(200, 169, 97, 0.1); border-color: var(--gold); }
+.c-ring.pulse::after { content: ""; position: absolute; inset: -1px; border: 1px solid var(--gold); border-radius: 50%; animation: c-pulse 0.65s var(--ease) forwards; }
+@keyframes c-pulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2.4); opacity: 0; } }
+.c-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: var(--gold); box-shadow: 0 0 10px rgba(200, 169, 97, 0.7); }
+.c-dot.over { background: transparent; box-shadow: none; }
+.house.cursor-on, .house.cursor-on a, .house.cursor-on button { cursor: none; }
 
 @media (max-width: 1023px) {
   main section, main article, #more, #studio { scroll-margin-top: 72px; }
