@@ -574,7 +574,7 @@ button { font: inherit; color: inherit; }
 .sealbtn.cracked .hr { transform: translate(9px, 9px) rotate(12deg); }
 .address { position: absolute; left: 0; right: 0; bottom: 9%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 16px; text-align: center; }
 .seal-msg { min-height: 32px; display: flex; align-items: center; }
-.seal-msg .hint { font-size: 11px; color: var(--mist); }
+.seal-msg .hint { font-size: 11px; color: var(--mist); text-wrap: balance; }
 .seal-msg .copied { font-size: 32px; animation: hs-ink 0.7s var(--ease) both; }
 .seal-msg [hidden] { display: none; }
 @keyframes hs-ink { from { opacity: 0; transform: translateY(8px) rotate(-4deg); } to { opacity: 1; transform: rotate(-4deg); } }
